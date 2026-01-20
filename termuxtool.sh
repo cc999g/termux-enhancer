@@ -25,9 +25,9 @@ export HOSTNAME=xiaomi6
 SCRIPT_VERSION="1.0"
 SCRIPT_UPDATE_URL="https://raw.githubusercontent.com/cc999g/termuxtool/refs/heads/main/version.txt"
 SCRIPT_SOURCE_URL="https://raw.githubusercontent.com/cc999g/termuxtool/refs/heads/main/termuxtool.sh"
-CONFIG_FILE="$HOME/.termux_enhancer_config"
-LOG_FILE="$HOME/.termux_enhancer.log"
-BACKUP_DIR="$HOME/.termux_enhancer_backups"
+CONFIG_FILE="$HOME/.termuxtool_config"
+LOG_FILE="$HOME/.termuxtool.log"
+BACKUP_DIR="$HOME/.termuxtool_backups"
 
 # -------------------------- 颜色和样式定义 --------------------------
 COLOR_RESET="\033[0m"
@@ -846,7 +846,7 @@ install_script() {
     print_section "🔧 脚本安装"
     
     # 检查是否已安装
-    local install_file="$HOME/.termux/boot/termux_enhancer.sh"
+    local install_file="$HOME/.termux/boot/termuxtool.sh"
     local bashrc_file="$HOME/.bashrc"
     
     if [ -f "$install_file" ]; then
@@ -869,9 +869,9 @@ install_script() {
     end_progress
     
     # 添加到.bashrc
-    if ! grep -q "termux_enhancer" "$bashrc_file"; then
+    if ! grep -q "termuxtool" "$bashrc_file"; then
         echo -e "\n# Termux 增强版脚本" >> "$bashrc_file"
-        echo "alias enhancer='bash $install_file'" >> "$bashrc_file"
+        echo "alias tool='bash $install_file'" >> "$bashrc_file"
         echo "source $install_file" >> "$bashrc_file"
         print_status success "已添加到.bashrc"
     else
@@ -879,7 +879,7 @@ install_script() {
     fi
     
     # 创建卸载脚本
-    local uninstall_file="$HOME/.termux/boot/uninstall_enhancer.sh"
+    local uninstall_file="$HOME/.termux/boot/uninstall_tool.sh"
     cat > "$uninstall_file" << EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
@@ -895,12 +895,12 @@ fi
 
 # 从.bashrc中移除
 if [ -f "$bashrc_file" ]; then
-    sed -i '/termux_enhancer/d' "$bashrc_file"
+    sed -i '/termuxtool/d' "$bashrc_file"
     echo "✓ 从.bashrc中移除"
 fi
 
 # 移除别名
-unalias enhancer 2>/dev/null
+unalias tool 2>/dev/null
 
 echo -e "\n✅ Termux 增强版脚本已卸载"
 echo "请重新启动Termux或执行: source ~/.bashrc"
@@ -910,19 +910,19 @@ EOF
     print_status success "脚本安装完成"
     print_table_row "启动脚本" "$install_file"
     print_table_row "卸载脚本" "$uninstall_file"
-    print_table_row "快捷命令" "enhancer"
+    print_table_row "快捷命令" "tool"
     
     echo -e "\n${COLOR_YELLOW}💡 安装完成！${COLOR_RESET}"
     print_list_item "下次启动Termux时自动运行增强脚本"
-    print_list_item "输入 'enhancer' 快速启动脚本"
+    print_list_item "输入 'tool' 快速启动脚本"
     print_list_item "运行 '$uninstall_file' 卸载脚本"
 }
 
 uninstall_script() {
     print_section "🗑️ 脚本卸载"
     
-    local install_file="$HOME/.termux/boot/termux_enhancer.sh"
-    local uninstall_file="$HOME/.termux/boot/uninstall_enhancer.sh"
+    local install_file="$HOME/.termux/boot/termuxtool.sh"
+    local uninstall_file="$HOME/.termux/boot/uninstall_tool.sh"
     local bashrc_file="$HOME/.bashrc"
     
     if [ ! -f "$install_file" ]; then
@@ -950,11 +950,11 @@ uninstall_script() {
     
     # 从.bashrc中移除
     start_progress "清理.bashrc"
-    sed -i '/termux_enhancer/d' "$bashrc_file"
+    sed -i '/termuxtool/d' "$bashrc_file"
     end_progress
     
     # 移除别名
-    unalias enhancer 2>/dev/null
+    unalias tool 2>/dev/null
     
     print_status success "脚本卸载完成"
     echo -e "\n${COLOR_YELLOW}💡 请重新启动Termux或执行: source ~/.bashrc${COLOR_RESET}"
@@ -1277,7 +1277,7 @@ check_for_updates() {
     local latest_version=""
     local sources=(
         "$SCRIPT_UPDATE_URL"
-        "https://gitee.com/mirror_termux/termux-enhancer/raw/main/version.txt"
+        "https://gitee.com/mirror_termux/termuxtool/raw/main/version.txt"
     )
     
     for source in "${sources[@]}"; do
@@ -1310,30 +1310,30 @@ update_script() {
     local version=$1
     print_subsection "更新脚本到版本 $version"
     
-    local backup_file="$HOME/termux_enhancer_backup_$(date +%Y%m%d_%H%M%S).sh"
+    local backup_file="$HOME/termuxtool_backup_$(date +%Y%m%d_%H%M%S).sh"
     cp "$0" "$backup_file"
     print_status info "当前脚本已备份到: $backup_file"
     
     local sources=(
         "$SCRIPT_SOURCE_URL"
-        "https://gitee.com/mirror_termux/termux-enhancer/raw/main/termux_enhancer.sh"
+        "https://gitee.com/mirror_termux/termuxtool/raw/main/termuxtool.sh"
     )
     
     for source in "${sources[@]}"; do
         start_progress "从 $(echo $source | cut -d'/' -f3) 下载"
         
-        if curl -fsSL --max-time 10 "$source" -o "$HOME/termux_enhancer_new.sh" 2>/dev/null; then
+        if curl -fsSL --max-time 10 "$source" -o "$HOME/termuxtool_new.sh" 2>/dev/null; then
             end_progress
             
-            if [ -s "$HOME/termux_enhancer_new.sh" ] && head -n 5 "$HOME/termux_enhancer_new.sh" | grep -q "Termux 增强版"; then
-                chmod +x "$HOME/termux_enhancer_new.sh"
-                mv "$HOME/termux_enhancer_new.sh" "$0"
+            if [ -s "$HOME/termuxtool_new.sh" ] && head -n 5 "$HOME/termuxtool_new.sh" | grep -q "Termux 增强版"; then
+                chmod +x "$HOME/termuxtool_new.sh"
+                mv "$HOME/termuxtool_new.sh" "$0"
                 print_status success "脚本更新成功！"
                 print_status info "请重新运行脚本以应用更新"
                 exit 0
             else
                 print_status error "下载的文件无效"
-                rm -f "$HOME/termux_enhancer_new.sh"
+                rm -f "$HOME/termuxtool_new.sh"
             fi
         else
             end_progress
@@ -1456,714 +1456,4 @@ show_github_status() {
 # -------------------------- 工具函数区 --------------------------
 is_valid_ip() {
     local ip=$1
-    [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && return 0 || return 1
-}
-
-get_local_ip() {
-    start_progress "获取局域网IP"
-    local ip_info=$( (ip -4 addr show || ifconfig) 2>/dev/null | awk '/inet / && !/127.0.0.1/ {
-        split($2, ip_arr, "/"); nic=$NF; gsub(/@.*|:.*|inet/, "", nic);
-        if (ip_arr[1] != "") printf "%s (%s) | ", ip_arr[1], nic
-    }' | sed 's/ | $//; s/^ | //' || echo "未获取到")
-    end_progress
-    echo "$ip_info"
-}
-
-get_public_ip() {
-    start_progress "获取公网IP"
-    local ip="获取失败"
-    
-    for api in "${IP_CHECK_API[@]}"; do
-        local tmp_ip=$(curl -s --max-time 5 $api 2>/dev/null | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
-        if is_valid_ip "$tmp_ip"; then
-            ip=$tmp_ip
-            break
-        fi
-    done
-    end_progress
-    echo "$ip"
-}
-
-get_ip_location() {
-    local ip=$1
-    if ! is_valid_ip "$ip" || [[ $ip =~ ^192\.168\. ]] || [[ $ip =~ ^10\. ]] || [[ $ip =~ ^172\.1[6-9]\. ]] || [[ $ip =~ ^172\.2[0-9]\. ]] || [[ $ip =~ ^172\.3[0-1]\. ]]; then
-        echo ""
-        return
-    fi
-
-    for api in "${LOC_CHECK_API[@]}"; do
-        local loc=$(curl -s --max-time 3 "${api//%IP%/$ip}" 2>/dev/null)
-        
-        # 解析不同API的返回格式
-        local country="" city="" region="" isp=""
-        
-        if [[ "$api" == *"ip-api.com"* ]]; then
-            country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"regionName":"[^"]*"' | cut -d'"' -f4)
-            isp=$(echo "$loc" | grep -o '"isp":"[^"]*"' | cut -d'"' -f4)
-        elif [[ "$api" == *"ipinfo.io"* ]]; then
-            country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
-        elif [[ "$api" == *"ipapi.co"* ]]; then
-            country=$(echo "$loc" | grep -o '"country_name":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
-            isp=$(echo "$loc" | grep -o '"org":"[^"]*"' | cut -d'"' -f4)
-        fi
-        
-        if [ -n "$country" ] && [ "$country" != "null" ]; then
-            local result=""
-            [ -n "$country" ] && result="$country"
-            [ -n "$region" ] && result="$result / $region"
-            [ -n "$city" ] && result="$result / $city"
-            [ -n "$isp" ] && result="$result ($isp)"
-            echo "$result"
-            return
-        fi
-    done
-    echo "未知"
-}
-
-# 修复：修正test_delay函数语法错误
-test_delay() {
-    local use_proxy=$1
-    local total_delay=0
-    local success_count=0
-
-    if [ "$use_proxy" = "true" ] && [ -n "$http_proxy" ]; then
-        # 代理模式使用curl
-        for ((i=1; i<=DELAY_TEST_COUNT; i++)); do
-            local delay=$(curl -x "$http_proxy" -s -w "%{time_total}\n" -o /dev/null --max-time 5 --connect-timeout 3 "$TEST_URL" 2>/dev/null)
-            if [ -n "$delay" ] && (( $(echo "$delay > 0" | bc -l 2>/dev/null || echo "0") )); then
-                total_delay=$(echo "$total_delay + $delay" | bc -l 2>/dev/null || echo "0")
-                success_count=$((success_count + 1))
-            fi
-        done
-        
-        if [ $success_count -eq 0 ]; then
-            echo "检测失败"
-            return
-        fi
-        
-        local avg_delay=$(echo "scale=1; ($total_delay / $success_count) * 1000" | bc -l 2>/dev/null || echo "0")
-        echo "${avg_delay}ms"
-    else
-        # 新增 ping 权限判断
-        if ! command -v ping &> /dev/null; then
-            echo "检测失败"
-            return
-        fi
-        # 直连模式使用ping（更准确）
-        ping_result=$(ping -c $DELAY_TEST_COUNT -W 3 "$TEST_URL" 2>/dev/null | grep "avg" | awk -F '/' '{print $5}')
-        if [ -n "$ping_result" ]; then
-            echo "${ping_result}ms"
-            return
-        else
-            echo "检测失败"
-        fi
-    fi
-}
-
-delay_alert() {
-    local delay=$1
-    if [ "$delay" = "检测失败" ]; then
-        print_status warning "延迟检测失败"
-        return
-    fi
-    [[ $delay =~ ^[0-9.]+ms$ ]] || { echo $delay; return; }
-    local delay_num=${delay%ms}
-    
-    if (( $(echo "$delay_num > $DELAY_THRESHOLD" | bc -l 2>/dev/null || echo "0") )); then
-        echo -e "${STYLE_ERROR}$delay (超过阈值 ${DELAY_THRESHOLD}ms)${COLOR_RESET}"
-    else
-        echo -e "${STYLE_SUCCESS}$delay${COLOR_RESET}"
-    fi
-}
-
-# -------------------------- 多线程网络检测改进 --------------------------
-test_all_connections() {
-    print_subsection "多线程网络检测"
-    
-    local urls=("$CHECK_URL_BAIDU" "$CHECK_URL_GOOGLE" "$CHECK_URL_GITHUB")
-    local names=("百度" "Google" "GitHub")
-    local pids=()
-    
-    # 创建临时文件存储结果
-    local tmp_dir=$(mktemp -d)
-    
-    for i in "${!urls[@]}"; do
-        (
-            local start_time=$(date +%s%N)
-            if curl -fsSL --max-time 3 "${urls[$i]}" > /dev/null 2>&1; then
-                local end_time=$(date +%s%N)
-                local duration=$(( (end_time - start_time) / 1000000 ))
-                echo "$i:✅ ${names[$i]}: 可用 (${duration}ms)" > "$tmp_dir/result_$i"
-            else
-                echo "$i:❌ ${names[$i]}: 不可用" > "$tmp_dir/result_$i"
-            fi
-        ) &
-        pids+=($!)
-    done
-    
-    # 显示进度
-    local completed=0
-    while [ $completed -lt ${#urls[@]} ]; do
-        completed=0
-        for pid in "${pids[@]}"; do
-            if ! kill -0 "$pid" 2>/dev/null; then
-                completed=$((completed + 1))
-            fi
-        done
-        
-        # 显示进度条
-        local progress=$((completed * 100 / ${#urls[@]}))
-        printf "\r检测进度: [%-50s] %d%%" "$(printf '#%.0s' $(seq 1 $((progress/2))))" "$progress"
-        sleep 0.1
-    done
-    printf "\n"
-    
-    # 收集并显示结果
-    for i in "${!urls[@]}"; do
-        if [ -f "$tmp_dir/result_$i" ]; then
-            local result=$(cat "$tmp_dir/result_$i")
-            local message=$(echo "$result" | cut -d: -f2-)
-            
-            if [[ "$message" == *"✅"* ]]; then
-                echo -e "  ${COLOR_GREEN}$message${COLOR_RESET}"
-            else
-                echo -e "  ${COLOR_RED}$message${COLOR_RESET}"
-            fi
-        fi
-    done
-    
-    # 清理临时文件
-    rm -rf "$tmp_dir"
-    
-    # 等待所有子进程结束
-    wait "${pids[@]}"
-}
-
-# -------------------------- Git镜像管理 --------------------------
-git_mirror_switch() {
-    CURRENT_MIRROR=$(( (CURRENT_MIRROR + 1) % ${#GIT_MIRROR[@]} ))
-    local mirror=${GIT_MIRROR[$CURRENT_MIRROR]}
-    
-    git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    
-    if [ "$mirror" != "https://github.com/" ]; then
-        git config --global url."$mirror".insteadOf https://github.com/
-        print_status success "Git镜像已切换至: $mirror"
-    else
-        print_status info "Git已切换至官方源"
-    fi
-}
-
-git_mirror_check() {
-    local current=$(git config --global --get-regexp url | grep github | awk '{print $1}' | sed 's/url\.//; s/\.insteadOf//')
-    if [ -n "$current" ]; then
-        print_status success "当前Git镜像: $current"
-    else
-        print_status info "当前Git使用官方源"
-    fi
-}
-
-test_git_mirror_speed() {
-    echo -e "${COLOR_CYAN}测试Git镜像速度...${COLOR_RESET}"
-    
-    local mirrors=(
-        "https://gitclone.com/github.com/octocat/Hello-World.git"
-        "https://mirror.ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://github.com/octocat/Hello-World.git"
-    )
-    
-    local mirror_names=("gitclone.com" "ghproxy.com" "ghproxy.com(备用)" "官方源")
-    local pids=()
-    
-    # 创建临时文件存储结果
-    local tmp_dir=$(mktemp -d)
-    
-    for i in "${!mirrors[@]}"; do
-        (
-            local start_time=$(date +%s%N)
-            if git ls-remote --heads "${mirrors[$i]}" > /dev/null 2>&1; then
-                local end_time=$(date +%s%N)
-                local duration=$(( (end_time - start_time) / 1000000 ))
-                echo "$i:✅ ${mirror_names[$i]}: ${duration}ms" > "$tmp_dir/git_result_$i"
-            else
-                echo "$i:❌ ${mirror_names[$i]}: 失败" > "$tmp_dir/git_result_$i"
-            fi
-        ) &
-        pids+=($!)
-    done
-    
-    # 显示进度
-    local completed=0
-    while [ $completed -lt ${#mirrors[@]} ]; do
-        completed=0
-        for pid in "${pids[@]}"; do
-            if ! kill -0 "$pid" 2>/dev/null; then
-                completed=$((completed + 1))
-            fi
-        done
-        
-        # 显示进度条
-        local progress=$((completed * 100 / ${#mirrors[@]}))
-        printf "\r测试进度: [%-50s] %d%%" "$(printf '#%.0s' $(seq 1 $((progress/2))))" "$progress"
-        sleep 0.1
-    done
-    printf "\n"
-    
-    # 收集并显示结果
-    for i in "${!mirrors[@]}"; do
-        if [ -f "$tmp_dir/git_result_$i" ]; then
-            local result=$(cat "$tmp_dir/git_result_$i")
-            local message=$(echo "$result" | cut -d: -f2-)
-            
-            if [[ "$message" == *"✅"* ]]; then
-                echo -e "  ${COLOR_GREEN}$message${COLOR_RESET}"
-            else
-                echo -e "  ${COLOR_RED}$message${COLOR_RESET}"
-            fi
-        fi
-    done
-    
-    # 清理临时文件
-    rm -rf "$tmp_dir"
-    
-    # 等待所有子进程结束
-    wait "${pids[@]}"
-}
-
-# -------------------------- 代理管理函数 --------------------------
-set_proxy() {
-    if [ "$PROXY_STATUS" = "P 🟢" ]; then
-        print_status info "代理已处于开启状态"
-        return
-    fi
-    
-    if [ "$PROXY_PROTOCOL" = "http" ]; then
-        export http_proxy="$PROXY_HTTP"
-        export https_proxy="$PROXY_HTTP"
-        export ALL_PROXY=""
-        git config --global http.proxy "$PROXY_HTTP" 2>/dev/null
-        git config --global https.proxy "$PROXY_HTTP" 2>/dev/null
-        print_status success "HTTP代理已开启: ${PROXY_HTTP//:$PROXY_PASS/:***}"
-    else
-        export http_proxy=""
-        export https_proxy=""
-        export ALL_PROXY="$PROXY_SOCKS5"
-        git config --global http.proxy "$PROXY_SOCKS5" 2>/dev/null
-        git config --global https.proxy "$PROXY_SOCKS5" 2>/dev/null
-        print_status success "SOCKS5代理已开启: ${PROXY_SOCKS5//:$PROXY_PASS/:***}"
-    fi
-    
-    # 修改：只设置简单的状态文本，不包含颜色代码
-    export PROXY_STATUS="P 🟢"
-    
-    print_subsection "代理生效验证"
-    start_progress "验证代理"
-    local proxy_ip=$(get_public_ip)
-    local proxy_loc=$(get_ip_location "$proxy_ip")
-    end_progress
-    
-    if [ "$proxy_ip" != "获取失败" ] && [ "$proxy_ip" != "未知IP" ]; then
-        print_status success "代理生效"
-        print_table_row "代理IP" "$proxy_ip"
-        print_table_row "归属地" "${proxy_loc:-未知}"
-        
-        start_progress "测试延迟"
-        local proxy_delay=$(test_delay true)
-        end_progress
-        echo -e "  延迟: $(delay_alert $proxy_delay)"
-    else
-        print_status warning "代理可能未正确生效"
-    fi
-}
-
-unset_proxy() {
-    if [ "$PROXY_STATUS" = "P ❌" ]; then
-        print_status info "代理已处于关闭状态"
-        return
-    fi
-    unset http_proxy https_proxy ALL_PROXY
-    git config --global --unset http.proxy 2>/dev/null
-    git config --global --unset https_proxy 2>/dev/null
-    # 修改：只设置简单的状态文本，不包含颜色代码
-    export PROXY_STATUS="P ❌"
-    print_status success "系统全局代理已关闭"
-}
-
-# -------------------------- 开机自动代理检测 --------------------------
-auto_proxy_detection() {
-    print_subsection "开机自动代理检测"
-    
-    start_progress "检测Google连通性"
-    if curl -fsSL --max-time 3 "$CHECK_URL_GOOGLE" > /dev/null 2>&1; then
-        end_progress
-        print_status info "Google直连可用，无需代理"
-        unset_proxy
-    else
-        end_progress
-        print_status info "Google直连不可用，检测代理可用性"
-        
-        if check_proxy_available; then
-            print_status success "代理可用，自动开启代理"
-            set_proxy
-        else
-            print_status warning "代理不可用，保持直连模式"
-            unset_proxy
-        fi
-    fi
-}
-
-# -------------------------- 交互式配置函数 --------------------------
-interactive_proxy_config() {
-    print_section "代理服务器配置"
-    
-    echo -e "${COLOR_CYAN}当前代理配置:${COLOR_RESET}"
-    print_table_row "协议" "$PROXY_PROTOCOL"
-    print_table_row "地址" "$PROXY_HOST:$PROXY_PORT"
-    if [ -n "$PROXY_USER" ]; then
-        print_table_row "用户" "$PROXY_USER"
-        print_table_row "密码" "******"
-    fi
-    
-    echo -e "\n${COLOR_YELLOW}是否修改代理配置?${COLOR_RESET} (${CONFIG_TIMEOUT}秒后跳过)"
-    if read -t $CONFIG_TIMEOUT -p "选择 [y/N]: " proxy_choice; then
-        if [[ "$proxy_choice" =~ ^[Yy]$ ]]; then
-            echo -e "\n${COLOR_CYAN}选择代理协议:${COLOR_RESET}"
-            print_list_item "1) HTTP/HTTPS代理 (常用)"
-            print_list_item "2) SOCKS5代理"
-            read -p "请输入选项 [1-2] (默认 1): " protocol_choice
-            
-            case ${protocol_choice:-1} in
-                1) new_protocol="http" ;;
-                2) new_protocol="socks5" ;;
-                *) new_protocol="http" ;;
-            esac
-            
-            read -p "请输入代理主机 [127.0.0.1]: " new_host
-            read -p "请输入代理端口 [7890]: " new_port
-            
-            new_host=${new_host:-"127.0.0.1"}
-            new_port=${new_port:-"7890"}
-            
-            if ! [[ "$new_port" =~ ^[0-9]+$ ]]; then
-                print_status error "端口必须是数字"
-                return 1
-            fi
-            
-            echo -e "\n${COLOR_CYAN}代理认证设置:${COLOR_RESET}"
-            read -p "是否需要代理认证? (y/N): " auth_choice
-            
-            new_user=""
-            new_pass=""
-            
-            if [[ "$auth_choice" =~ ^[Yy]$ ]]; then
-                read -p "请输入代理用户名: " new_user
-                read -s -p "请输入代理密码: " new_pass
-                echo ""
-                
-                if [ -n "$new_pass" ]; then
-                    read -s -p "请再次输入代理密码: " new_pass_confirm
-                    echo ""
-                    
-                    if [ "$new_pass" != "$new_pass_confirm" ]; then
-                        print_status error "两次输入的密码不一致"
-                        return 1
-                    fi
-                fi
-            fi
-            
-            PROXY_PROTOCOL="$new_protocol"
-            PROXY_HOST="$new_host"
-            PROXY_PORT="$new_port"
-            PROXY_USER="$new_user"
-            PROXY_PASS="$new_pass"
-            
-            # 保存配置
-            save_config
-            
-            # 重新生成代理URL
-            if [ -n "$PROXY_USER" ] && [ -n "$PROXY_PASS" ]; then
-                PROXY_HTTP="http://${PROXY_USER}:${PROXY_PASS}@${PROXY_HOST}:${PROXY_PORT}"
-                PROXY_SOCKS5="socks5://${PROXY_USER}:${PROXY_PASS}@${PROXY_HOST}:${PROXY_PORT}"
-            else
-                PROXY_HTTP="http://${PROXY_HOST}:${PROXY_PORT}"
-                PROXY_SOCKS5="socks5://${PROXY_HOST}:${PROXY_PORT}"
-            fi
-            
-            print_status success "代理配置已更新并保存"
-            check_proxy_available
-        else
-            print_status info "跳过代理配置"
-        fi
-    else
-        print_status info "配置超时，跳过代理配置"
-    fi
-}
-
-interactive_git_config() {
-    print_section "Git镜像源配置"
-    
-    local current_mirror=$(git config --global --get-regexp url | grep github | awk '{print $2}' || echo "官方源")
-    print_table_row "当前镜像" "$current_mirror"
-    
-    echo -e "\n${COLOR_YELLOW}是否切换Git镜像源?${COLOR_RESET} (${CONFIG_TIMEOUT}秒后跳过)"
-    if read -t $CONFIG_TIMEOUT -p "选择 [y/N]: " git_choice; then
-        if [[ "$git_choice" =~ ^[Yy]$ ]]; then
-            echo -e "\n${COLOR_CYAN}选择Git镜像源:${COLOR_RESET}"
-            print_list_item "1) gitclone.com (国内推荐)"
-            print_list_item "2) ghproxy.com (国内推荐)"
-            print_list_item "3) ghproxy.com (备用)"
-            print_list_item "4) 官方源 github.com (直连)"
-            print_list_item "0) 保持当前设置"
-            
-            read -p "请输入选项 [0-4]: " mirror_choice
-            
-            case $mirror_choice in
-                1)
-                    git config --global url."https://gitclone.com/github.com/".insteadOf https://github.com/
-                    print_status success "已切换至 gitclone.com 镜像"
-                    ;;
-                2)
-                    git config --global url."https://mirror.ghproxy.com/https://github.com/".insteadOf https://github.com/
-                    print_status success "已切换至 ghproxy.com 镜像"
-                    ;;
-                3)
-                    git config --global url."https://ghproxy.com/https://github.com/".insteadOf https://github.com/
-                    print_status success "已切换至 ghproxy.com 镜像(备用)"
-                    ;;
-                4)
-                    git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-                    git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-                    git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-                    print_status success "已切换至官方源"
-                    ;;
-                *)
-                    print_status info "保持当前Git镜像设置"
-                    ;;
-            esac
-            test_git_mirror_speed
-        else
-            print_status info "跳过Git镜像配置"
-        fi
-    else
-        print_status info "配置超时，跳过Git镜像配置"
-    fi
-}
-
-interactive_github_config() {
-    print_section "GitHub PAT配置"
-    
-    show_github_status
-    
-    echo -e "\n${COLOR_YELLOW}是否配置GitHub PAT?${COLOR_RESET} (${CONFIG_TIMEOUT}秒后跳过)"
-    if read -t $CONFIG_TIMEOUT -p "选择 [y/N]: " pat_choice; then
-        if [[ "$pat_choice" =~ ^[Yy]$ ]]; then
-            setup_github_pat
-        else
-            print_status info "跳过GitHub PAT配置"
-        fi
-    else
-        print_status info "配置超时，跳过GitHub PAT配置"
-    fi
-}
-
-interactive_config_menu() {
-    print_section "交互式配置菜单"
-    
-    interactive_proxy_config
-    interactive_git_config
-    
-    if check_github_connectivity; then
-        interactive_github_config
-    else
-        print_status warning "GitHub不可访问，跳过PAT配置"
-    fi
-    
-    print_status success "配置完成"
-}
-
-# -------------------------- 主执行流程 --------------------------
-main() {
-    # 检查依赖
-    check_dependencies
-    
-    # 加载配置
-    load_config
-    
-    # 初始化代理状态 - 修改：只设置简单的状态文本
-    export PROXY_STATUS="P ❌"
-
-    # 显示欢迎语
-    show_welcome
-    
-    # 显示Git配置
-    show_git_config
-    
-    # 显示快捷命令提示
-    show_quick_commands
-    
-    # 检查更新
-    check_for_updates
-    
-    # 自动测试并选择镜像
-    auto_select_mirror
-    
-    print_section "网络基础信息检测"
-    
-    # 检测IP和延迟
-    LOCAL_IP_FULL=$(get_local_ip)
-    PUBLIC_IP_FULL=$(get_public_ip)
-    DIRECT_DELAY=$(test_delay false)
-    
-    LOCAL_IP=$(echo "$LOCAL_IP_FULL" | awk -F ' | \\| ' '{print $1}')
-    PUBLIC_IP=$(echo "$PUBLIC_IP_FULL" | awk '{print $1}')
-    
-    if ! is_valid_ip "$PUBLIC_IP"; then
-        PUBLIC_IP="未知IP"
-        PUBLIC_LOC="无法查询"
-    else
-        PUBLIC_LOC=$(get_ip_location "$PUBLIC_IP")
-    fi
-    
-    echo -e "${COLOR_CYAN}🌐 网络信息:${COLOR_RESET}"
-    print_table_row "局域网IP" "$LOCAL_IP_FULL"
-    print_table_row "公网IP" "$PUBLIC_IP_FULL"
-    print_table_row "归属地" "${PUBLIC_LOC:-(局域网IP)}"
-    print_table_row "直连延迟" "$(delay_alert $DIRECT_DELAY)"
-    
-    # 开机自动代理检测
-    auto_proxy_detection
-    
-    # 如果代理开启，重新检测IP和延迟
-    if [ "$PROXY_STATUS" = "P 🟢" ]; then
-        PROXY_PUBLIC_IP=$(get_public_ip | awk '{print $1}')
-        PROXY_PUBLIC_LOC=$(get_ip_location "$PROXY_PUBLIC_IP")
-        PROXY_DELAY=$(test_delay true)
-        
-        echo -e "\n${COLOR_CYAN}🔄 代理生效后检测:${COLOR_RESET}"
-        print_table_row "代理IP" "$PROXY_PUBLIC_IP"
-        print_table_row "归属地" "${PROXY_PUBLIC_LOC}"
-        print_table_row "代理延迟" "$(delay_alert $PROXY_DELAY)"
-    fi
-    
-    # 交互式配置
-    interactive_config_menu
-    
-    # 询问是否批量安装工具
-    echo -e "\n${COLOR_YELLOW}是否批量安装常用工具?${COLOR_RESET}"
-    read -p "选择 (y/N): " install_tools_choice
-    
-    if [[ "$install_tools_choice" =~ ^[Yy]$ ]]; then
-        install_common_tools
-    fi
-    
-    # 询问是否清理缓存
-    echo -e "\n${COLOR_YELLOW}是否清理系统缓存?${COLOR_RESET}"
-    read -p "选择 (y/N): " clean_cache_choice
-    
-    if [[ "$clean_cache_choice" =~ ^[Yy]$ ]]; then
-        clean_cache
-    fi
-    
-    # 询问是否安装脚本
-    echo -e "\n${COLOR_YELLOW}是否安装脚本到启动项?${COLOR_RESET}"
-    read -p "选择 (y/N): " install_script_choice
-    
-    if [[ "$install_script_choice" =~ ^[Yy]$ ]]; then
-        install_script
-    fi
-    
-    # 显示系统信息（放在最后面）
-    show_system_info
-}
-
-# -------------------------- 快捷命令别名 --------------------------
-setup_aliases() {
-    # 代理相关
-    alias proxy-on="set_proxy"
-    alias proxy-off="unset_proxy"
-    alias proxy-check="check_proxy_available"
-    alias proxy-set="interactive_proxy_config"
-    alias proxy-test="check_proxy_available"
-    alias delay-compare="echo -e '${COLOR_CYAN}📊 延迟对比测试:${COLOR_RESET}' && echo -n '直连延迟: ' && delay_alert \$(test_delay false) && echo -n '代理延迟: ' && delay_alert \$(test_delay true)"
-    
-    # 网络检测
-    alias net-check="test_all_connections"
-    alias speed-test="test_git_mirror_speed"
-    
-    # Git镜像
-    alias git-mirror-switch="git_mirror_switch"
-    alias git-mirror-check="git_mirror_check"
-    alias git-mirror-off="git config --global --unset url.*.insteadOf https://github.com/ && echo -e '${STYLE_ERROR}Git所有镜像已关闭${COLOR_RESET}'"
-    alias git-config="interactive_git_config"
-    alias git-speed-test="test_git_mirror_speed"
-    alias git-config-show="show_git_config"
-    alias git-config-basic="configure_git_basic"
-    alias auto-mirror="auto_select_mirror"
-    
-    # GitHub
-    alias github-pat-setup="setup_github_pat"
-    alias github-pat-remove="remove_github_pat"
-    alias github-status="show_github_status"
-    
-    # 系统命令
-    alias termux-commands="show_termux_commands"
-    alias install-tools="install_common_tools"
-    alias clean-cache="clean_cache"
-    alias export-config="export_config"
-    alias import-config="import_config"
-    alias script-install="install_script"
-    alias script-uninstall="uninstall_script"
-    alias toggle-mirror="toggle_global_mirror"
-    alias check-mirror="check_global_mirror"
-    alias script-update="check_for_updates"
-    alias script-version="echo -e '${COLOR_CYAN}Termux 增强版脚本版本: ${SCRIPT_VERSION}${COLOR_RESET}'"
-    alias system-info="show_system_info"
-    alias help="show_quick_commands"
-    
-    echo -e "${STYLE_SUCCESS}✅ 快捷命令已配置完成${COLOR_RESET}"
-}
-
-# -------------------------- 命令提示符配置 --------------------------
-setup_prompt() {
-    # 定义简单的颜色变量用于提示符
-    local COLOR_GREEN_PS="\033[1;32m"
-    local COLOR_BLUE_PS="\033[1;34m"
-    local COLOR_YELLOW_PS="\033[1;33m"
-    local COLOR_RESET_PS="\033[0m"
-    
-    parse_git_branch() {
-        git branch 2>/dev/null | sed -n -e 's/^\* \(.*\)/[\1]/p'
-    }
-
-    get_mirror_status() {
-        local current=$(git config --global --get-regexp url | grep github | awk '{print $1}' | sed 's/url\.//; s/\.insteadOf//')
-        if [ -n "$current" ]; then
-            echo "M 🟢"
-        else
-            echo "M ❌"
-        fi
-    }
-
-    # 简化的PS1设置，避免颜色代码嵌套
-    # 注意：PROXY_STATUS 变量已经在其他地方设置，只包含 "P 🟢" 或 "P ❌"
-    PS1='$PROXY_STATUS $(get_mirror_status) '"${COLOR_GREEN_PS}"'\u@\h'"${COLOR_RESET_PS}"':'"${COLOR_BLUE_PS}"'\w'"${COLOR_YELLOW_PS}"'$(parse_git_branch)'"${COLOR_RESET_PS}"'\$ '
-    
-    echo -e "${STYLE_SUCCESS}✅ 命令提示符已配置${COLOR_RESET}"
-}
-
-# -------------------------- 执行主函数 --------------------------
-main
-setup_aliases
-setup_prompt
-
-# 清理临时函数
-unset -f load_config save_config check_dependencies main setup_aliases setup_prompt
+    [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && return
