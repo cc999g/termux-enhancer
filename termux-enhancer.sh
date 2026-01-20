@@ -1,3 +1,4 @@
+
 #!/data/data/com.termux/files/usr/bin/bash
 
 # 清屏（放在脚本最前端）
@@ -597,22 +598,12 @@ install_common_tools() {
     done
 }
 
-# -------------------------- 自动清理缓存 --------------------------
+# -------------------------- 自动清理缓存 - 修复版本 --------------------------
 clean_cache() {
     print_section "🧹 自动清理缓存"
     
-    # 清理APT缓存
-    local apt_cache_size=$(du -sh /data/data/com.termux/files/usr/var/cache/apt/archives 2>/dev/null | cut -f1 || echo "0B")
-    
-    # 清理TMP目录
-    local tmp_size=$(du -sh /data/data/com.termux/files/usr/tmp 2>/dev/null | cut -f1 || echo "0B")
-    
-    # 清理下载缓存
-    local download_size=$(du -sh ~/storage/downloads 2>/dev/null | cut -f1 || echo "0B")
-    
     echo -e "${COLOR_CYAN}开始自动清理所有缓存...${COLOR_RESET}"
     
-    local total_freed=0
     local cleaned_items=()
     
     # 清理APT缓存
@@ -620,21 +611,27 @@ clean_cache() {
     pkg clean > /dev/null 2>&1
     end_progress
     cleaned_items+=("APT缓存")
-    total_freed=$((total_freed + $(echo "$apt_cache_size" | sed 's/[^0-9]*//g') * 1024))
     
     # 清理临时文件
     start_progress "清理临时文件"
     rm -rf /data/data/com.termux/files/usr/tmp/* > /dev/null 2>&1
     end_progress
     cleaned_items+=("临时文件")
-    total_freed=$((total_freed + $(echo "$tmp_size" | sed 's/[^0-9]*//g') * 1024))
     
-    # 清理下载缓存
-    start_progress "清理下载缓存"
-    rm -rf ~/storage/downloads/* > /dev/null 2>&1
+    # 清理下载缓存（如果有权限）
+    if [ -d ~/storage/downloads ]; then
+        start_progress "清理下载缓存"
+        find ~/storage/downloads -type f -mtime +7 -delete > /dev/null 2>&1
+        end_progress
+        cleaned_items+=("下载缓存")
+    fi
+    
+    # 清理bash历史
+    start_progress "清理bash历史"
+    history -c 2>/dev/null
+    [ -f ~/.bash_history ] && > ~/.bash_history
     end_progress
-    cleaned_items+=("下载缓存")
-    total_freed=$((total_freed + $(echo "$download_size" | sed 's/[^0-9]*//g') * 1024))
+    cleaned_items+=("bash历史")
     
     if [ ${#cleaned_items[@]} -gt 0 ]; then
         print_status success "清理完成"
@@ -642,23 +639,6 @@ clean_cache() {
         for item in "${cleaned_items[@]}"; do
             echo -e "  ${COLOR_GREEN}✓${COLOR_RESET} $item"
         done
-        
-        # 转换为可读大小
-        local freed_kb=$total_freed
-        local freed_mb=0
-        local freed_gb=0
-        
-        if [ $freed_kb -ge 1048576 ]; then
-            freed_gb=$((freed_kb / 1048576))
-            freed_kb=$((freed_kb % 1048576))
-            freed_mb=$((freed_kb / 1024))
-            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_gb}GB ${freed_mb}MB${COLOR_RESET}"
-        elif [ $freed_kb -ge 1024 ]; then
-            freed_mb=$((freed_kb / 1024))
-            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_mb}MB${COLOR_RESET}"
-        else
-            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_kb}KB${COLOR_RESET}"
-        fi
     else
         print_status info "没有找到可清理的项目"
     fi
@@ -1322,39 +1302,57 @@ get_ip_location() {
         return
     fi
 
+    local location="未知"
+    
+    # 尝试多个API获取归属地信息
     for api in "${LOC_CHECK_API[@]}"; do
-        local loc=$(curl -s --max-time 3 "${api//%IP%/$ip}" 2>/dev/null)
+        local api_url="${api//%IP%/$ip}"
+        local loc=$(curl -s --max-time 3 "$api_url" 2>/dev/null)
         
-        # 解析不同API的返回格式
-        local country="" city="" region="" isp=""
-        
-        if [[ "$api" == *"ip-api.com"* ]]; then
-            country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"regionName":"[^"]*"' | cut -d'"' -f4)
-            isp=$(echo "$loc" | grep -o '"isp":"[^"]*"' | cut -d'"' -f4)
-        elif [[ "$api" == *"ipinfo.io"* ]]; then
-            country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
-        elif [[ "$api" == *"ipapi.co"* ]]; then
-            country=$(echo "$loc" | grep -o '"country_name":"[^"]*"' | cut -d'"' -f4)
-            city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
-            region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
-            isp=$(echo "$loc" | grep -o '"org":"[^"]*"' | cut -d'"' -f4)
+        if [ -z "$loc" ] || [[ "$loc" == *"error"* ]] || [[ "$loc" == *"rate limit"* ]]; then
+            continue
         fi
         
-        if [ -n "$country" ] && [ "$country" != "null" ]; then
-            local result=""
-            [ -n "$country" ] && result="$country"
-            [ -n "$region" ] && result="$result / $region"
-            [ -n "$city" ] && result="$result / $city"
-            [ -n "$isp" ] && result="$result ($isp)"
-            echo "$result"
-            return
+        # 尝试解析不同API的返回格式
+        if [[ "$api" == *"ip-api.com"* ]]; then
+            local country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
+            local city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
+            local region=$(echo "$loc" | grep -o '"regionName":"[^"]*"' | cut -d'"' -f4)
+            local isp=$(echo "$loc" | grep -o '"isp":"[^"]*"' | cut -d'"' -f4)
+            
+            if [ -n "$country" ] && [ "$country" != "null" ]; then
+                location="$country"
+                [ -n "$region" ] && [ "$region" != "null" ] && location="$location/$region"
+                [ -n "$city" ] && [ "$city" != "null" ] && location="$location/$city"
+                [ -n "$isp" ] && [ "$isp" != "null" ] && location="$location ($isp)"
+                break
+            fi
+        elif [[ "$api" == *"ipinfo.io"* ]]; then
+            local country=$(echo "$loc" | grep -o '"country":"[^"]*"' | cut -d'"' -f4)
+            local city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
+            local region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
+            
+            if [ -n "$country" ] && [ "$country" != "null" ]; then
+                location="$country"
+                [ -n "$region" ] && [ "$region" != "null" ] && location="$location/$region"
+                [ -n "$city" ] && [ "$city" != "null" ] && location="$location/$city"
+                break
+            fi
+        elif [[ "$api" == *"ipapi.co"* ]]; then
+            local country=$(echo "$loc" | grep -o '"country_name":"[^"]*"' | cut -d'"' -f4)
+            local city=$(echo "$loc" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
+            local region=$(echo "$loc" | grep -o '"region":"[^"]*"' | cut -d'"' -f4)
+            
+            if [ -n "$country" ] && [ "$country" != "null" ]; then
+                location="$country"
+                [ -n "$region" ] && [ "$region" != "null" ] && location="$location/$region"
+                [ -n "$city" ] && [ "$city" != "null" ] && location="$location/$city"
+                break
+            fi
         fi
     done
-    echo "未知"
+    
+    echo "$location"
 }
 
 # 修复：修正test_delay函数语法错误
