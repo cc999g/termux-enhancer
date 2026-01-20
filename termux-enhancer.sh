@@ -12,8 +12,8 @@ clear
 #      ╚═╝    ╚═════╝
 #
 #  Termux 增强版环境配置脚本 v1.0
-#  功能：IP检测、代理自动切换、Git镜像管理、延迟测试、交互式配置、GitHub PAT配置
-#  新增：Git配置提示、批量安装工具、缓存清理、配置导入导出、脚本安装卸载、自动镜像选择
+#  功能：IP检测、代理自动切换、延迟测试、GitHub PAT配置
+#  新增：Git配置提示、批量安装工具、自动缓存清理、配置导入导出、脚本安装卸载
 # ==============================================
 
 # -------------------------- 初始化配置 --------------------------
@@ -130,15 +130,6 @@ LOC_CHECK_API=(
     "https://ipapi.co/%IP%/json/"
 )
 
-# Git镜像源列表
-GIT_MIRROR=(
-    "https://gitclone.com/github.com/"
-    "https://mirror.ghproxy.com/https://github.com/"
-    "https://ghproxy.com/https://github.com/"
-    "https://github.com/"
-)
-CURRENT_MIRROR=0
-
 # GitHub配置
 GITHUB_PAT_FILE="$HOME/.github_pat"
 GITHUB_CREDENTIALS_FILE="$HOME/.git-credentials"
@@ -237,8 +228,8 @@ show_welcome() {
     echo "      ╚═╝    ╚═════╝"
     echo -e "${COLOR_RESET}"
     echo -e "          📌 Termux 增强版环境配置脚本 v${SCRIPT_VERSION}"
-    echo -e "          📌 功能：IP检测、代理切换、Git镜像、GitHub PAT"
-    echo -e "          📌 新增：Termux命令大全、镜像源配置、系统信息\n"
+    echo -e "          📌 功能：IP检测、代理切换、GitHub PAT"
+    echo -e "          📌 新增：Termux命令大全、系统信息\n"
 }
 
 # -------------------------- 显示快捷命令提示 --------------------------
@@ -255,14 +246,6 @@ show_quick_commands() {
     
     echo -e "\n${COLOR_CYAN}🔄 网络检测命令:${COLOR_RESET}"
     print_list_item "net-check - 网络连通性检测"
-    print_list_item "speed-test - Git镜像速度测试"
-    
-    echo -e "\n${COLOR_CYAN}📦 Git镜像命令:${COLOR_RESET}"
-    print_list_item "git-mirror-switch - 切换Git镜像"
-    print_list_item "git-mirror-check - 查看Git镜像"
-    print_list_item "git-mirror-off - 关闭Git镜像"
-    print_list_item "git-config - 配置Git镜像"
-    print_list_item "git-speed-test - 测试镜像速度"
     
     echo -e "\n${COLOR_CYAN}🐙 GitHub命令:${COLOR_RESET}"
     print_list_item "github-pat-setup - 配置GitHub PAT"
@@ -272,14 +255,19 @@ show_quick_commands() {
     echo -e "\n${COLOR_CYAN}🛠️ 系统命令:${COLOR_RESET}"
     print_list_item "termux-commands - 显示Termux命令大全"
     print_list_item "termux-mirror - 配置Termux镜像源"
-    print_list_item "toggle-mirror - 开关Git镜像"
-    print_list_item "check-mirror - 检查Git镜像配置"
     print_list_item "script-update - 检查脚本更新"
     print_list_item "script-version - 显示脚本版本"
     print_list_item "system-info - 显示系统信息"
+    print_list_item "install-tools - 批量安装工具"
+    print_list_item "export-config - 导出配置"
+    print_list_item "import-config - 导入配置"
+    print_list_item "script-install - 安装脚本到启动项"
+    print_list_item "script-uninstall - 卸载脚本"
+    print_list_item "git-config-show - 显示Git配置"
+    print_list_item "git-config-basic - 配置Git基本信息"
     
     echo -e "\n${COLOR_YELLOW}💡 提示: 输入 'help' 显示此帮助信息${COLOR_RESET}"
-    echo -e "${COLOR_YELLOW}💡 提示: 命令提示符中 'P 🟢' 表示代理开启，'M 🟢' 表示镜像开启${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}💡 提示: 命令提示符中 'P 🟢' 表示代理开启${COLOR_RESET}"
 }
 
 # -------------------------- 依赖检测函数 --------------------------
@@ -340,17 +328,6 @@ show_git_config() {
     else
         echo -e "\n${COLOR_CYAN}📋 Git 别名配置:${COLOR_RESET}"
         print_table_row "状态" "无别名配置"
-    fi
-    
-    # Git镜像配置
-    local git_mirror=$(git config --global --get-regexp url 2>/dev/null | head -5 || echo "无镜像配置")
-    echo -e "\n${COLOR_CYAN}🔄 Git 镜像配置:${COLOR_RESET}"
-    if [ "$git_mirror" != "无镜像配置" ]; then
-        echo "$git_mirror" | while read mirror; do
-            echo -e "  ${COLOR_GREEN}✓${COLOR_RESET} $mirror"
-        done
-    else
-        print_table_row "状态" "使用官方源"
     fi
     
     # Git代理配置
@@ -435,7 +412,7 @@ show_system_info() {
     print_section "💻 系统信息汇总"
     
     echo -e "${COLOR_CYAN}📋 基础信息:${COLOR_RESET}"
-    print_table_row "日期时间" "$(date '+%Y-%m-%d %H:%M:%S')"
+    print_table_row "日期时间" "$(date '+%Y-%m-d %H:%M:%S')"
     print_table_row "主机名" "$HOSTNAME"
     print_table_row "当前目录" "$(pwd)"
     print_table_row "脚本版本" "$SCRIPT_VERSION"
@@ -462,7 +439,6 @@ show_system_info() {
     
     echo -e "\n${COLOR_CYAN}🔧 配置状态:${COLOR_RESET}"
     show_github_status
-    check_global_mirror
 }
 
 # -------------------------- 电池信息函数 --------------------------
@@ -625,6 +601,15 @@ install_common_tools() {
 clean_cache() {
     print_section "🧹 自动清理缓存"
     
+    # 清理APT缓存
+    local apt_cache_size=$(du -sh /data/data/com.termux/files/usr/var/cache/apt/archives 2>/dev/null | cut -f1 || echo "0B")
+    
+    # 清理TMP目录
+    local tmp_size=$(du -sh /data/data/com.termux/files/usr/tmp 2>/dev/null | cut -f1 || echo "0B")
+    
+    # 清理下载缓存
+    local download_size=$(du -sh ~/storage/downloads 2>/dev/null | cut -f1 || echo "0B")
+    
     echo -e "${COLOR_CYAN}开始自动清理所有缓存...${COLOR_RESET}"
     
     local total_freed=0
@@ -635,18 +620,21 @@ clean_cache() {
     pkg clean > /dev/null 2>&1
     end_progress
     cleaned_items+=("APT缓存")
+    total_freed=$((total_freed + $(echo "$apt_cache_size" | sed 's/[^0-9]*//g') * 1024))
     
     # 清理临时文件
     start_progress "清理临时文件"
     rm -rf /data/data/com.termux/files/usr/tmp/* > /dev/null 2>&1
     end_progress
     cleaned_items+=("临时文件")
+    total_freed=$((total_freed + $(echo "$tmp_size" | sed 's/[^0-9]*//g') * 1024))
     
     # 清理下载缓存
     start_progress "清理下载缓存"
     rm -rf ~/storage/downloads/* > /dev/null 2>&1
     end_progress
     cleaned_items+=("下载缓存")
+    total_freed=$((total_freed + $(echo "$download_size" | sed 's/[^0-9]*//g') * 1024))
     
     if [ ${#cleaned_items[@]} -gt 0 ]; then
         print_status success "清理完成"
@@ -654,6 +642,23 @@ clean_cache() {
         for item in "${cleaned_items[@]}"; do
             echo -e "  ${COLOR_GREEN}✓${COLOR_RESET} $item"
         done
+        
+        # 转换为可读大小
+        local freed_kb=$total_freed
+        local freed_mb=0
+        local freed_gb=0
+        
+        if [ $freed_kb -ge 1048576 ]; then
+            freed_gb=$((freed_kb / 1048576))
+            freed_kb=$((freed_kb % 1048576))
+            freed_mb=$((freed_kb / 1024))
+            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_gb}GB ${freed_mb}MB${COLOR_RESET}"
+        elif [ $freed_kb -ge 1024 ]; then
+            freed_mb=$((freed_kb / 1024))
+            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_mb}MB${COLOR_RESET}"
+        else
+            echo -e "${COLOR_CYAN}释放空间: ${COLOR_GREEN}${freed_kb}KB${COLOR_RESET}"
+        fi
     else
         print_status info "没有找到可清理的项目"
     fi
@@ -915,91 +920,6 @@ uninstall_script() {
     echo -e "\n${COLOR_YELLOW}💡 请重新启动Termux或执行: source ~/.bashrc${COLOR_RESET}"
 }
 
-# -------------------------- 自动测试并选择镜像 --------------------------
-auto_select_mirror() {
-    print_section "⚡ 自动测试并选择镜像"
-    
-    local mirrors=(
-        "https://gitclone.com/github.com/octocat/Hello-World.git"
-        "https://mirror.ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://github.com/octocat/Hello-World.git"
-    )
-    
-    local mirror_names=("gitclone.com" "ghproxy.com" "ghproxy.com(备用)" "官方源")
-    local mirror_speeds=()
-    local mirror_status=()
-    
-    echo -e "${COLOR_CYAN}正在测试镜像速度...${COLOR_RESET}"
-    
-    # 创建临时文件存储结果
-    local tmp_dir=$(mktemp -d)
-    
-    for i in "${!mirrors[@]}"; do
-        printf "\r测试进度: %d/%d" $((i+1)) ${#mirrors[@]}
-        
-        local start_time=$(date +%s%N)
-        if timeout 5 git ls-remote --heads "${mirrors[$i]}" > /dev/null 2>&1; then
-            local end_time=$(date +%s%N)
-            local duration=$(( (end_time - start_time) / 1000000 ))
-            mirror_speeds[$i]=$duration
-            mirror_status[$i]="✅ 可用 (${duration}ms)"
-        else
-            mirror_speeds[$i]=999999
-            mirror_status[$i]="❌ 不可用"
-        fi
-    done
-    printf "\n"
-    
-    # 显示测试结果
-    echo -e "\n${COLOR_CYAN}镜像测试结果:${COLOR_RESET}"
-    for i in "${!mirrors[@]}"; do
-        echo -e "  ${mirror_status[$i]} - ${mirror_names[$i]}"
-    done
-    
-    # 找出最快的可用镜像
-    local fastest_index=-1
-    local fastest_speed=999999
-    
-    for i in "${!mirror_speeds[@]}"; do
-        if [ "${mirror_speeds[$i]}" -lt "$fastest_speed" ] && [[ "${mirror_status[$i]}" == *"✅"* ]]; then
-            fastest_speed=${mirror_speeds[$i]}
-            fastest_index=$i
-        fi
-    done
-    
-    if [ $fastest_index -eq -1 ]; then
-        print_status error "没有可用的镜像"
-        return 1
-    fi
-    
-    local fastest_mirror="${mirrors[$fastest_index]}"
-    local fastest_name="${mirror_names[$fastest_index]}"
-    
-    echo -e "\n${COLOR_CYAN}最快镜像: ${COLOR_GREEN}${fastest_name} (${fastest_speed}ms)${COLOR_RESET}"
-    
-    # 自动配置镜像
-    git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    
-    if [ "$fastest_mirror" != "https://github.com/octocat/Hello-World.git" ]; then
-        local mirror_url="${fastest_mirror%.git}"
-        mirror_url="${mirror_url%/octocat/Hello-World}"
-        git config --global url."$mirror_url".insteadOf https://github.com/
-        print_status success "已自动配置最快镜像: ${mirror_url}"
-    else
-        print_status success "官方源速度最快，使用官方源"
-    fi
-    
-    # 显示当前配置
-    local current_mirror=$(git config --global --get-regexp url | grep github | awk '{print $2}' || echo "官方源")
-    echo -e "${COLOR_CYAN}当前Git镜像配置: ${COLOR_GREEN}$current_mirror${COLOR_RESET}"
-    
-    # 清理临时文件
-    rm -rf "$tmp_dir"
-}
-
 # -------------------------- Termux 常用命令大全 --------------------------
 show_termux_commands() {
     print_section "📚 Termux 常用命令大全"
@@ -1175,52 +1095,6 @@ configure_termux_mirror() {
             print_status error "无效的选项"
             ;;
     esac
-}
-
-# -------------------------- 一键开关和检查全局镜像功能 --------------------------
-toggle_global_mirror() {
-    if git config --global --get-regexp url | grep -q github; then
-        git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-        git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-        git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-        print_status success "已关闭所有Git镜像，使用官方源"
-    else
-        echo -e "${COLOR_CYAN}选择要开启的Git镜像:${COLOR_RESET}"
-        print_list_item "1) gitclone.com (国内推荐)"
-        print_list_item "2) ghproxy.com (国内推荐)"
-        print_list_item "3) ghproxy.com (备用)"
-        read -p "请输入选项 [1-3]: " mirror_choice
-        
-        case $mirror_choice in
-            1)
-                git config --global url."https://gitclone.com/github.com/".insteadOf https://github.com/
-                print_status success "已开启 gitclone.com 镜像"
-                ;;
-            2)
-                git config --global url."https://mirror.ghproxy.com/https://github.com/".insteadOf https://github.com/
-                print_status success "已开启 ghproxy.com 镜像"
-                ;;
-            3)
-                git config --global url."https://ghproxy.com/https://github.com/".insteadOf https://github.com/
-                print_status success "已开启 ghproxy.com 镜像"
-                ;;
-            *)
-                print_status error "无效选项"
-                ;;
-        esac
-    fi
-}
-
-check_global_mirror() {
-    local mirrors=$(git config --global --get-regexp url | grep github | awk '{print $2}' || echo "未设置镜像")
-    if [ "$mirrors" != "未设置镜像" ]; then
-        print_status success "当前Git镜像配置:"
-        git config --global --get-regexp url | grep github | while read line; do
-            echo "  ${COLOR_GREEN}✓${COLOR_RESET} $line"
-        done
-    else
-        print_status info "当前未配置Git镜像，使用官方源"
-    fi
 }
 
 # -------------------------- 自动更新功能 --------------------------
@@ -1602,101 +1476,6 @@ test_all_connections() {
     wait "${pids[@]}"
 }
 
-# -------------------------- Git镜像管理 --------------------------
-git_mirror_switch() {
-    CURRENT_MIRROR=$(( (CURRENT_MIRROR + 1) % ${#GIT_MIRROR[@]} ))
-    local mirror=${GIT_MIRROR[$CURRENT_MIRROR]}
-    
-    git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-    git config --global --unset-all url.*.insteadOf 2>/dev/null
-    
-    if [ "$mirror" != "https://github.com/" ]; then
-        git config --global url."$mirror".insteadOf https://github.com/
-        print_status success "Git镜像已切换至: $mirror"
-    else
-        print_status info "Git已切换至官方源"
-    fi
-}
-
-git_mirror_check() {
-    local current=$(git config --global --get-regexp url | grep github | awk '{print $1}' | sed 's/url\.//; s/\.insteadOf//')
-    if [ -n "$current" ]; then
-        print_status success "当前Git镜像: $current"
-    else
-        print_status info "当前Git使用官方源"
-    fi
-}
-
-test_git_mirror_speed() {
-    echo -e "${COLOR_CYAN}测试Git镜像速度...${COLOR_RESET}"
-    
-    local mirrors=(
-        "https://gitclone.com/github.com/octocat/Hello-World.git"
-        "https://mirror.ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://ghproxy.com/https://github.com/octocat/Hello-World.git"
-        "https://github.com/octocat/Hello-World.git"
-    )
-    
-    local mirror_names=("gitclone.com" "ghproxy.com" "ghproxy.com(备用)" "官方源")
-    local pids=()
-    
-    # 创建临时文件存储结果
-    local tmp_dir=$(mktemp -d)
-    
-    for i in "${!mirrors[@]}"; do
-        (
-            local start_time=$(date +%s%N)
-            if git ls-remote --heads "${mirrors[$i]}" > /dev/null 2>&1; then
-                local end_time=$(date +%s%N)
-                local duration=$(( (end_time - start_time) / 1000000 ))
-                echo "$i:✅ ${mirror_names[$i]}: ${duration}ms" > "$tmp_dir/git_result_$i"
-            else
-                echo "$i:❌ ${mirror_names[$i]}: 失败" > "$tmp_dir/git_result_$i"
-            fi
-        ) &
-        pids+=($!)
-    done
-    
-    # 显示进度
-    local completed=0
-    while [ $completed -lt ${#mirrors[@]} ]; do
-        completed=0
-        for pid in "${pids[@]}"; do
-            if ! kill -0 "$pid" 2>/dev/null; then
-                completed=$((completed + 1))
-            fi
-        done
-        
-        # 显示进度条
-        local progress=$((completed * 100 / ${#mirrors[@]}))
-        printf "\r测试进度: [%-50s] %d%%" "$(printf '#%.0s' $(seq 1 $((progress/2))))" "$progress"
-        sleep 0.1
-    done
-    printf "\n"
-    
-    # 收集并显示结果
-    for i in "${!mirrors[@]}"; do
-        if [ -f "$tmp_dir/git_result_$i" ]; then
-            local result=$(cat "$tmp_dir/git_result_$i")
-            local message=$(echo "$result" | cut -d: -f2-)
-            
-            if [[ "$message" == *"✅"* ]]; then
-                echo -e "  ${COLOR_GREEN}$message${COLOR_RESET}"
-            else
-                echo -e "  ${COLOR_RED}$message${COLOR_RESET}"
-            fi
-        fi
-    done
-    
-    # 清理临时文件
-    rm -rf "$tmp_dir"
-    
-    # 等待所有子进程结束
-    wait "${pids[@]}"
-}
-
 # -------------------------- 代理管理函数 --------------------------
 check_direct_connect() {
     print_subsection "三地址连通性检测"
@@ -1809,7 +1588,7 @@ auto_proxy_detection() {
     fi
 }
 
-# -------------------------- 代理配置函数（改为快捷命令） --------------------------
+# -------------------------- 代理配置函数 --------------------------
 interactive_proxy_config() {
     print_section "代理服务器配置"
     
@@ -1894,54 +1673,6 @@ interactive_proxy_config() {
     fi
 }
 
-interactive_git_config() {
-    print_section "Git镜像源配置"
-    
-    local current_mirror=$(git config --global --get-regexp url | grep github | awk '{print $2}' || echo "官方源")
-    print_table_row "当前镜像" "$current_mirror"
-    
-    echo -e "\n${COLOR_YELLOW}是否切换Git镜像源?${COLOR_RESET}"
-    read -p "选择 [y/N]: " git_choice
-    
-    if [[ "$git_choice" =~ ^[Yy]$ ]]; then
-        echo -e "\n${COLOR_CYAN}选择Git镜像源:${COLOR_RESET}"
-        print_list_item "1) gitclone.com (国内推荐)"
-        print_list_item "2) ghproxy.com (国内推荐)"
-        print_list_item "3) ghproxy.com (备用)"
-        print_list_item "4) 官方源 github.com (直连)"
-        print_list_item "0) 保持当前设置"
-        
-        read -p "请输入选项 [0-4]: " mirror_choice
-        
-        case $mirror_choice in
-            1)
-                git config --global url."https://gitclone.com/github.com/".insteadOf https://github.com/
-                print_status success "已切换至 gitclone.com 镜像"
-                ;;
-            2)
-                git config --global url."https://mirror.ghproxy.com/https://github.com/".insteadOf https://github.com/
-                print_status success "已切换至 ghproxy.com 镜像"
-                ;;
-            3)
-                git config --global url."https://ghproxy.com/https://github.com/".insteadOf https://github.com/
-                print_status success "已切换至 ghproxy.com 镜像(备用)"
-                ;;
-            4)
-                git config --global --unset url."https://gitclone.com/github.com/".insteadOf 2>/dev/null
-                git config --global --unset url."https://mirror.ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-                git config --global --unset url."https://ghproxy.com/https://github.com/".insteadOf 2>/dev/null
-                print_status success "已切换至官方源"
-                ;;
-            *)
-                print_status info "保持当前Git镜像设置"
-                ;;
-        esac
-        test_git_mirror_speed
-    else
-        print_status info "跳过Git镜像配置"
-    fi
-}
-
 # -------------------------- 主执行流程 --------------------------
 main() {
     # 检查依赖
@@ -1964,9 +1695,6 @@ main() {
     
     # 检查更新
     check_for_updates
-    
-    # 自动测试并选择镜像
-    auto_select_mirror
     
     print_section "网络基础信息检测"
     
@@ -2006,7 +1734,8 @@ main() {
         print_table_row "代理延迟" "$(delay_alert $PROXY_DELAY)"
     fi
     
-    # 自动清理缓存（不再询问）
+    # 自动清理缓存
+    print_section "自动清理缓存"
     clean_cache
     
     # 显示系统信息（放在最后面）
@@ -2025,17 +1754,6 @@ setup_aliases() {
     
     # 网络检测
     alias net-check="test_all_connections"
-    alias speed-test="test_git_mirror_speed"
-    
-    # Git镜像
-    alias git-mirror-switch="git_mirror_switch"
-    alias git-mirror-check="git_mirror_check"
-    alias git-mirror-off="git config --global --unset url.*.insteadOf https://github.com/ && echo -e '${STYLE_ERROR}Git所有镜像已关闭${COLOR_RESET}'"
-    alias git-config="interactive_git_config"
-    alias git-speed-test="test_git_mirror_speed"
-    alias git-config-show="show_git_config"
-    alias git-config-basic="configure_git_basic"
-    alias auto-mirror="auto_select_mirror"
     
     # GitHub
     alias github-pat-setup="setup_github_pat"
@@ -2046,16 +1764,15 @@ setup_aliases() {
     alias termux-commands="show_termux_commands"
     alias termux-mirror="configure_termux_mirror"
     alias install-tools="install_common_tools"
-    alias clean-cache="clean_cache"
     alias export-config="export_config"
     alias import-config="import_config"
     alias script-install="install_script"
     alias script-uninstall="uninstall_script"
-    alias toggle-mirror="toggle_global_mirror"
-    alias check-mirror="check_global_mirror"
     alias script-update="check_for_updates"
     alias script-version="echo -e '${COLOR_CYAN}Termux 增强版脚本版本: ${SCRIPT_VERSION}${COLOR_RESET}'"
     alias system-info="show_system_info"
+    alias git-config-show="show_git_config"
+    alias git-config-basic="configure_git_basic"
     alias help="show_quick_commands"
     
     echo -e "${STYLE_SUCCESS}✅ 快捷命令已配置完成${COLOR_RESET}"
@@ -2067,17 +1784,8 @@ setup_prompt() {
         git branch 2>/dev/null | sed -n -e 's/^\* \(.*\)/[\1]/p'
     }
 
-    get_mirror_status() {
-        local current=$(git config --global --get-regexp url | grep github | awk '{print $1}' | sed 's/url\.//; s/\.insteadOf//')
-        if [ -n "$current" ]; then
-            echo "M 🟢"
-        else
-            echo "M ❌"
-        fi
-    }
-
     # 使用专门为PS1定义的颜色
-    PS1="${PS1_COLOR_CYAN}\$PROXY_STATUS ${PS1_COLOR_PURPLE}\$(get_mirror_status) ${PS1_COLOR_GREEN}cc999g@\h:${PS1_COLOR_BLUE}\w${PS1_COLOR_YELLOW}\$(parse_git_branch)${PS1_COLOR_RESET}\$ "
+    PS1="${PS1_COLOR_CYAN}\$PROXY_STATUS ${PS1_COLOR_GREEN}cc999g@\h:${PS1_COLOR_BLUE}\w${PS1_COLOR_YELLOW}\$(parse_git_branch)${PS1_COLOR_RESET}\$ "
     
     echo -e "${STYLE_SUCCESS}✅ 命令提示符已配置${COLOR_RESET}"
 }
