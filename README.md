@@ -31,28 +31,28 @@
 ## 🚀 下载与运行
 
 ### 下载脚本
-
-方法一：直接下载11
 ```
+# 方法一：直接下载11
+
 curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh -o termux_enhancer.sh
-```
 
-方法二：Git克隆11
-```
+
+# 方法二：Git克隆
+
 git clone https://github.com/cc999g/termux-enhancer.git
 cd termux-enhancer
 ```
 
 ### 运行脚本
-
-方法一：直接运行11
 ```
+# 方法一：直接运行
+
 chmod +x termux_enhancer.sh
 ./termux_enhancer.sh
-```
 
-方法二：一键运行（不保存文件）11
-```
+
+# 方法二：一键运行（不保存文件）11
+
 curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh | bash
 ```
 
@@ -100,13 +100,13 @@ script-uninstall
 
 ### 首次配置步骤
 
-# 方法一：交互式配置（推荐）11
+方法一：交互式配置（推荐）
 运行脚本后，按照提示进行配置：
 1. 代理服务器配置
 2. GitHub PAT配置  
 3. Git基本信息配置
 
-# 方法二：手动编辑配置文件11
+方法二：手动编辑配置文件
 ```
 # 编辑配置文件
 nano ~/.termux_enhancer_config
