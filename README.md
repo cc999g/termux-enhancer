@@ -34,7 +34,7 @@
 ```
 # 方法一：直接下载11
 
-curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh -o termux_enhancer.sh
+curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh -o termux-enhancer.sh
 
 
 # 方法二：Git克隆
@@ -47,13 +47,13 @@ cd termux-enhancer
 ```
 # 方法一：直接运行
 
-chmod +x termux_enhancer.sh
-./termux_enhancer.sh
+chmod +x termux-enhancer.sh
+./termux-enhancer.sh
 
 
 # 方法二：一键运行（不保存文件）11
 
-curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh | bash
+curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux-enhancer.sh | bash
 ```
 
 ## ⚙️ 永久性配置
@@ -73,7 +73,7 @@ enhancer
 
 ### 安装后的特性
 
-- 脚本安装在 `~/.termux/boot/termux_enhancer.sh`
+- 脚本安装在 `~/.termux/boot/termux-enhancer.sh`
 - 自动添加到 `.bashrc` 文件
 - 每次启动Termux时自动运行
 - 可使用 `enhancer` 命令快速启动
@@ -93,9 +93,9 @@ script-uninstall
 
 ### 配置文件位置
 
-- **主配置**: `~/.termux_enhancer_config`
-- **日志文件**: `~/.termux_enhancer.log`
-- **备份目录**: `~/.termux_enhancer_backups`
+- **主配置**: `~/.termux-enhancer_config`
+- **日志文件**: `~/.termux-enhancer.log`
+- **备份目录**: `~/.termux-enhancer_backups`
 - **GitHub配置**: `~/.github_pat`, `~/.github_user`, `~/.git-credentials`
 
 ### 首次配置步骤
@@ -109,7 +109,7 @@ script-uninstall
 方法二：手动编辑配置文件
 ```
 # 编辑配置文件
-nano ~/.termux_enhancer_config
+nano ~/.termux-enhancer_config
 ```
 
 配置文件示例：
@@ -190,8 +190,8 @@ enhancer
 ### 手动更新
 ```
 # 重新下载最新版本
-curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux_enhancer.sh -o termux_enhancer.sh
-chmod +x termux_enhancer.sh
+curl -fsSL https://raw.githubusercontent.com/cc999g/termux-enhancer/main/termux-enhancer.sh -o termux-enhancer.sh
+chmod +x termux-enhancer.sh
 ```
 
 ### 配置备份与恢复
@@ -202,25 +202,25 @@ export-config
 # 导入配置
 import-config
 
-# 备份文件存储在：~/.termux_enhancer_backups/
+# 备份文件存储在：~/.termux-enhancer_backups/
 ```
 
 ## 📁 文件结构说明
 
 ```
 ~/.termux_enhancer/           # 脚本相关目录
-├── termux_enhancer_config    # 主配置文件
-├── termux_enhancer.log       # 日志文件
+├── termux-enhancer_config    # 主配置文件
+├── termux-enhancer.log       # 日志文件
 ├── .github_pat               # GitHub PAT存储
 ├── .github_user              # GitHub用户名存储
 └── .git-credentials          # Git凭据存储
 
-~/.termux_enhancer_backups/   # 配置备份目录
+~/.termux-enhancer_backups/   # 配置备份目录
 ├── termux_config_20240101_120000.tar.gz
 └── termux_config_20240102_150000.tar.gz
 
 ~/.termux/boot/               # 启动脚本目录（安装后）
-├── termux_enhancer.sh        # 主脚本文件
+├── termux-enhancer.sh        # 主脚本文件
 └── uninstall_enhancer.sh     # 卸载脚本
 ```
 
@@ -254,8 +254,8 @@ import-config
 
 5. **查看日志文件**
    ```
-   cat ~/.termux_enhancer.log
-   tail -f ~/.termux_enhancer.log  # 实时查看
+   cat ~/.termux-enhancer.log
+   tail -f ~/.termux-enhancer.log  # 实时查看
    ```
 
 ## 📄 命令行参数
@@ -264,30 +264,30 @@ import-config
 
 ```
 # 显示帮助信息
-bash termux_enhancer.sh --help
-bash termux_enhancer.sh -h
+bash termux-enhancer.sh --help
+bash termux-enhancer.sh -h
 
 # 安装脚本到启动项
-bash termux_enhancer.sh --install
-bash termux_enhancer.sh -i
+bash termux-enhancer.sh --install
+bash termux-enhancer.sh -i
 
 # 检查更新
-bash termux_enhancer.sh --update
-bash termux_enhancer.sh -u
+bash termux-enhancer.sh --update
+bash termux-enhancer.sh -u
 
 # 配置代理
-bash termux_enhancer.sh --config
-bash termux_enhancer.sh -c
+bash termux-enhancer.sh --config
+bash termux-enhancer.sh -c
 
 # 显示版本
-bash termux_enhancer.sh --version
-bash termux_enhancer.sh -v
+bash termux-enhancer.sh --version
+bash termux-enhancer.sh -v
 
 # 清理缓存
-bash termux_enhancer.sh --clean-cache
+bash termux-enhancer.sh --clean-cache
 
 # 调试模式
-bash termux_enhancer.sh --debug
+bash termux-enhancer.sh --debug
 ```
 
 ## 📝 注意事项
