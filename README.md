@@ -313,7 +313,7 @@ bash termux-enhancer.sh --debug
 ## 🤝 贡献与反馈
 
 - **GitHub仓库**: [https://github.com/cc999g/termux-enhancer](https://github.com/cc999g/termux-enhancer)
-- **问题反馈**: [GitHub Issues](https://github.com/cc999g/termux-enhancer/issues)
+- **问题反馈**: [GitHub Issues][https://github.com/cc999g/termux-enhancer/issues](https://github.com/cc999g/termux-enhancer/issues)
 - **作者**: cc999g
 
 ## 📄 许可证
